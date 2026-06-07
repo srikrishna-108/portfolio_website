@@ -460,11 +460,14 @@ footer span{color:var(--orange);font-weight:600;}
       <div id="contact-form-anchor" style="scroll-margin-top:80px;">
         <div class="contact-form fade" style="transition-delay:0.1s;">
           <h3>Send a message</h3>
-          <div class="fg"><label class="fl">Your Name</label><input class="fi" type="text" placeholder="Jane Smith" id="cname"/></div>
-          <div class="fg"><label class="fl">Your Email</label><input class="fi" type="email" placeholder="jane@company.com" id="cemail"/></div>
-          <div class="fg"><label class="fl">Message</label><textarea class="fi" placeholder="Hi Srikrishna, I'd like to discuss..." id="cmsg"></textarea></div>
-          <button class="fsub" onclick="sendMsg()">Send Message →</button>
-          <div class="form-success" id="formSuccess">✅ Opening your email client… Thanks for reaching out!</div>
+          <form id="contactForm">
+            <div class="fg"><label class="fl">Your Name</label><input class="fi" type="text" name="name" placeholder="Jane Smith" id="cname" required/></div>
+            <div class="fg"><label class="fl">Your Email</label><input class="fi" type="email" name="email" placeholder="jane@company.com" id="cemail" required/></div>
+            <div class="fg"><label class="fl">Message</label><textarea class="fi" name="message" placeholder="Hi Srikrishna, I'd like to discuss..." id="cmsg" required></textarea></div>
+            <button class="fsub" type="button" onclick="sendMsg()">Send Message →</button>
+          </form>
+          <div class="form-success" id="formSuccess" style="display:none;">✅ Message sent! I'll get back to you soon.</div>
+          <div class="form-error" id="formError" style="display:none;padding:0.9rem;border-radius:8px;background:#fff1f1;border:1px solid rgba(220,50,50,0.25);color:#c0392b;font-size:0.88rem;font-weight:500;text-align:center;margin-top:0.75rem;">❌ Something went wrong. Please try again or email me directly.</div>
         </div>
       </div>
     </div>
@@ -494,8 +497,8 @@ window.addEventListener('load', () => {
   });
 });
 
-/* ── Contact form → mailto with name, email, message ── */
-function sendMsg() {
+/* ── Contact form → Formspree (lands directly in Gmail) ── */
+async function sendMsg() {
   const name    = document.getElementById('cname').value.trim();
   const email   = document.getElementById('cemail').value.trim();
   const message = document.getElementById('cmsg').value.trim();
@@ -505,20 +508,28 @@ function sendMsg() {
     return;
   }
 
-  const subject = encodeURIComponent('Portfolio enquiry from ' + name);
-  const body    = encodeURIComponent(
-    'Hi Srikrishna,\n\n' + message +
-    '\n\n──────────────────\nFrom: ' + name +
-    '\nEmail: ' + email
-  );
+  const btn = document.querySelector('.fsub');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
 
-  window.location.href =
-    'mailto:srikrishnacharansai@gmail.com?subject=' + subject + '&body=' + body;
+  try {
+    const res = await fetch('https://formspree.io/f/mvznkvov', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ name, email, message })
+    });
 
-  // Show success banner
-  const banner = document.getElementById('formSuccess');
-  banner.style.display = 'block';
-  setTimeout(() => { banner.style.display = 'none'; }, 5000);
+    if (res.ok) {
+      document.getElementById('contactForm').style.display = 'none';
+      document.getElementById('formSuccess').style.display = 'block';
+    } else {
+      throw new Error('Server error');
+    }
+  } catch (err) {
+    document.getElementById('formError').style.display = 'block';
+    btn.textContent = 'Send Message →';
+    btn.disabled = false;
+  }
 }
 </script>
 </body>
